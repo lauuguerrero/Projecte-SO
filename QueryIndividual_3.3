@@ -1,0 +1,75 @@
+// Programa en C per consultar el rècord de punts en una partida de Rummikub
+
+// Incloure la llibreria de MySQL
+#include <mysql.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+int main(int argc, char **argv) {
+    // Conector per accedir al servidor MySQL
+    MYSQL *conn;
+    int err;
+
+    // Estructura especial per emmagatzemar resultats de consultes
+    MYSQL_RES *resultado;
+    MYSQL_ROW row;
+
+    int id_partida;
+    char consulta[256];
+
+    // Crear la connexió amb MySQL
+    conn = mysql_init(NULL);
+    if (conn == NULL) {
+        printf("Error al crear la connexió: %u %s\n", mysql_errno(conn), mysql_error(conn));
+        exit(1);
+    }
+
+    // Connectar-se a MySQL
+    conn = mysql_real_connect(conn, "localhost", "root", "mysql", "rummikub", 0, NULL, 0);
+    if (conn == NULL) {
+        printf("Error en connectar-se a MySQL: %u %s\n", mysql_errno(conn), mysql_error(conn));
+        mysql_close(conn);
+        exit(1);
+    }
+
+    // Demanar a l'usuari l'ID de la partida
+    printf("Introdueix l'ID de la partida: ");
+    scanf("%d", &id_partida);
+
+    // Construir la consulta SQL per obtenir el rècord de punts d'una partida
+    sprintf(consulta, "SELECT MAX(punts) FROM jugador_partida WHERE id_partida = %d", id_partida);
+
+    // Executar la consulta
+    err = mysql_query(conn, consulta);
+    if (err != 0) {
+        printf("Error en la consulta: %u %s\n", mysql_errno(conn), mysql_error(conn));
+        mysql_close(conn);
+        exit(1);
+    }
+
+    // Recollir el resultat de la consulta
+    resultado = mysql_store_result(conn);
+    if (resultado == NULL) {
+        printf("Error en obtenir resultats: %u %s\n", mysql_errno(conn), mysql_error(conn));
+        mysql_close(conn);
+        exit(1);
+    }
+
+    // Mostrar els resultats
+    row = mysql_fetch_row(resultado);
+    if (row == NULL || row[0] == NULL) {
+        printf("No hi ha registres de rècord per aquesta partida.\n");
+    } else {
+        printf("\nEl rècord de punts a la partida %d és de %s punts.\n", id_partida, row[0]);
+    }
+
+    // Alliberar memòria dels resultats
+    mysql_free_result(resultado);
+
+    // Tancar la connexió amb el servidor MySQL
+    mysql_close(conn);
+
+    // Sortida correcta del programa
+    exit(0);
+}
